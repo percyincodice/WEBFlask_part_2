@@ -7,7 +7,7 @@ import uuid
 
 class PersonDA:
     client = MongoClient("mongodb://localhost:27017")
-    db = client["apibd"]
+    db = client["apibd_prereview"]
     collectionPersona = db["personas"]
 
     @staticmethod
