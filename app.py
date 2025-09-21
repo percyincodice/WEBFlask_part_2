@@ -1,3 +1,4 @@
+from controller.UserController import UserBp
 from flask import Flask
 from controller.PersonController import PersonBp
 from controller.AuthController import AuthBp
@@ -6,6 +7,7 @@ app = Flask(__name__)
 CORS(app)  
 app.register_blueprint(PersonBp)
 app.register_blueprint(AuthBp)
+app.register_blueprint(UserBp)
 
 
 @app.route("/")
