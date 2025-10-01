@@ -1,5 +1,8 @@
+from Utils.BcryptPassword import BcryptPassword
+from Utils.EncryptDecryptUtil import EncryptDecryptUtil
 from Utils.EnvUtil import EnvUtil
 from Utils.SecretManagerUtil import SecretManagerUtil
+from dataaccess.AuthDA import AuthDA
 from flask import jsonify
 from dataaccess.UserDA import UserDA
 
@@ -30,9 +33,14 @@ class UserLogic:
             secret = SecretManagerUtil.get_secret(secret_name, secret_name_region)            
 
             if not UserDA.validateDuplicateUser(username=username, secret=secret):
+                
+                pepper = EnvUtil.get_env_variable("BCRYPT_PEPPER")
+                cost = int(EnvUtil.get_env_variable("BCRYPT_COST", "12"))
+                password_hash = BcryptPassword.hash_password(password, pepper, cost)
+                
                 return UserDA.createUser({
                     "username": username,
-                    "password": password,
+                    "password": password_hash,
                     "role": role,
                 }, secret)
             
@@ -116,3 +124,66 @@ class UserLogic:
         except Exception as e:
             print("Error: ", e)
             return jsonify({"message": "Error delete user logic."}), 500
+        
+        
+    @staticmethod
+    def updatePassword(body, decoded_token):
+        try:
+            if body["password_old"] is None or body["password_old"] == "":
+                return jsonify({"error": "Old Password is empty."}), 400
+
+            if body["password_new"] is None or body["password_new"] == "":
+                return jsonify({"error": "New Password is empty."}), 400
+            
+            secret_name = EnvUtil.get_env_variable("AWS_CONEXION_BD")
+            secret_name_region = EnvUtil.get_env_variable("AWS_CONEXION_BD_REGION")
+            
+            secret = SecretManagerUtil.get_secret(secret_name, secret_name_region)
+            
+            (login_response, login_code) = AuthDA.login(decoded_token["username"], body["password_old"])
+            
+            if login_code == 200:
+                pepper = EnvUtil.get_env_variable("BCRYPT_PEPPER")
+                cost = int(EnvUtil.get_env_variable("BCRYPT_COST", "12"))
+                password_hash = BcryptPassword.hash_password(body["password_new"], pepper, cost)
+                
+                return UserDA.updatePassword(decoded_token["username"], password_hash, secret)
+            else:
+                return login_response, login_code            
+            
+
+
+        except Exception as e:
+            print("Error: ", e)
+            return jsonify({"message": "Error update usera logic."}), 500
+        
+        
+    @staticmethod
+    def encrypt_test(body):
+        try:
+            text_to_encrypt = body["data"]
+            
+            key_id_kms = EnvUtil.get_env_variable("AWS_KEY_ID_KMS")
+            key_id_kms_region = EnvUtil.get_env_variable("AWS_KEY_ID_KMS_REGION")
+            
+            encrypt = EncryptDecryptUtil.encrypt(text_to_encrypt, key_id_kms, key_id_kms_region)
+            return jsonify(encrypt), encrypt["codigo_respuesta"]
+        
+        except Exception as e:
+            print("Error: ", e)
+            return jsonify({"message": "Error encrypt data test."}), 500
+        
+    @staticmethod
+    def decrypt_test(body):
+        try:
+            text_to_decrypt = body["data"]
+            
+            key_id_kms = EnvUtil.get_env_variable("AWS_KEY_ID_KMS")
+            key_id_kms_region = EnvUtil.get_env_variable("AWS_KEY_ID_KMS_REGION")
+            
+            encrypt = EncryptDecryptUtil.decrypt(text_to_decrypt, key_id_kms, key_id_kms_region)
+            return jsonify(encrypt), encrypt["codigo_respuesta"]
+        
+        except Exception as e:
+            print("Error: ", e)
+            return jsonify({"message": "Error decrypt data test."}), 500

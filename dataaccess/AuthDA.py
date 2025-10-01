@@ -1,3 +1,5 @@
+from Utils.BcryptPassword import BcryptPassword
+from Utils.EnvUtil import EnvUtil
 from flask import jsonify
 from pymongo import MongoClient
 
@@ -12,12 +14,15 @@ class AuthDA:
     @staticmethod
     def login(username, password):
         try:
-            user = AuthDA.collectionUsers.find_one({"username": username, "password": password})
+            user = AuthDA.collectionUsers.find_one({"username": username})
 
-            if user:                
-                return jsonify({"username": user["username"], "message": "User logged in successfully."}), 200
-            else:
-                return jsonify({"message": "Invalid credentials"}), 404
+            if user:                                
+                pepper = EnvUtil.get_env_variable("BCRYPT_PEPPER")
+                if BcryptPassword.verify_password(user["password"], password, pepper):
+                    return jsonify({"username": user["username"], "message": "User logged in successfully."}), 200
+                
+                        
+            return jsonify({"message": "Invalid credentials"}), 404
 
         except Exception as e:
             print("Error:", e)
