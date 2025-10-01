@@ -58,3 +58,34 @@ def deleteUserById(decoded_token, user_id):
     except Exception as e:
         print("Error:", e) # cloudwatch aws
         return "Error delete user.", 500
+    
+
+@UserBp.route("/api/user/encrypt", methods=["POST"])
+def encrypt_test():
+    try:
+        body = request.get_json()
+
+        return UserLogic.encrypt_test(body)
+    except Exception as e:
+        print("Error:", e) # cloudwatch aws
+        return "Error encrypt controller.", 500
+    
+@UserBp.route("/api/user/decrypt", methods=["POST"])
+def decrypt_test():
+    try:
+        body = request.get_json()
+
+        return UserLogic.decrypt_test(body)
+    except Exception as e:
+        print("Error:", e) # cloudwatch aws
+        return "Error decrypt controller.", 500
+    
+@UserBp.route("/api/user/update-password", methods=["PUT"])
+@validation_token.token_required
+def updatePassword(decoded_token):
+    try:       
+        body = request.get_json()
+        return UserLogic.updatePassword(body, decoded_token)
+    except Exception as e:
+        print("Error:", e) # cloudwatch aws
+        return "Error.", 500

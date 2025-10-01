@@ -1,5 +1,8 @@
+from Utils.BcryptPassword import BcryptPassword
+from Utils.EncryptDecryptUtil import EncryptDecryptUtil
 from Utils.EnvUtil import EnvUtil
 from Utils.SecretManagerUtil import SecretManagerUtil
+from dataaccess.AuthDA import AuthDA
 from flask import jsonify
 from dataaccess.UserDA import UserDA
 
@@ -34,9 +37,14 @@ class UserLogic:
                 return jsonify({"error": "username is registered"}), 400
                 
 
+            bcryptpepper = EnvUtil.get_env_variable("BCRYPT_PEPPER")
+            bcrypcost = int(EnvUtil.get_env_variable("BCRYPT_COST"))
+            
+            password_hash = BcryptPassword.hash_password(password, bcryptpepper, bcrypcost)
+
             return UserDA.createUser({
                 "username": username,
-                "password": password,
+                "password": password_hash,
                 "role": role,
             }, secret)
         except Exception as e:
@@ -115,3 +123,74 @@ class UserLogic:
         except Exception as e:
             print("Error: ", e)
             return jsonify({"message": "Error delete user logic."}), 500
+        
+        
+    @staticmethod
+    def encrypt_test(body):
+        try:
+            text_to_encrypt = body["data"]
+            
+            key_kms_name = EnvUtil.get_env_variable("AWS_KMS_KEY")
+            key_kms_name_region = EnvUtil.get_env_variable("AWS_KMS_KEY_REGION")
+            
+            encrypt_data = EncryptDecryptUtil.encrypt(text_to_encrypt, key_kms_name, key_kms_name_region)
+            return jsonify(encrypt_data), encrypt_data["codigo_respuesta"]
+        
+        except Exception as e:
+            print("Error: ", e)
+            return jsonify({"message": "Error encrypt data logic."}), 500
+        
+        
+    @staticmethod
+    def decrypt_test(body):
+        try:
+            text_to_decrypt = body["data"]
+            
+            key_kms_name = EnvUtil.get_env_variable("AWS_KMS_KEY")
+            key_kms_name_region = EnvUtil.get_env_variable("AWS_KMS_KEY_REGION")
+            
+            decrypt_data = EncryptDecryptUtil.decrypt(text_to_decrypt, key_kms_name, key_kms_name_region)
+            return jsonify(decrypt_data), decrypt_data["codigo_respuesta"]
+        
+        except Exception as e:
+            print("Error: ", e)
+            return jsonify({"message": "Error decrypt data logic."}), 500
+        
+        
+    @staticmethod
+    def updatePassword(body, decoded_token):
+        try:         
+
+            if body["password_old"] is None or body["password_old"] == "":
+                return jsonify({"error": "Old Password is empty."}), 400
+
+            if body["password_new"] is None or body["password_new"] == "":
+                return jsonify({"error": "new Password is empty."}), 400
+         
+
+          
+            secret_name = EnvUtil.get_env_variable("AWS_CONEXION_BD")
+            secret_name_region = EnvUtil.get_env_variable("AWS_CONEXION_BD_REGION")
+            
+            secret = SecretManagerUtil.get_secret(secret_name, secret_name_region)
+            
+        
+            #validar si el usuario y clave antigua si son validas
+            (response_login, code_login) = AuthDA.login(decoded_token["username"], body["password_old"])
+            
+            if code_login == 200:
+                bcryptpepper = EnvUtil.get_env_variable("BCRYPT_PEPPER")
+                bcrypcost = int(EnvUtil.get_env_variable("BCRYPT_COST"))
+                
+                password_hash = BcryptPassword.hash_password(body["password_new"], bcryptpepper, bcrypcost)
+                
+                return UserDA.updatePassword(decoded_token["username"], password_hash, secret)
+            
+                       
+            return response_login, code_login        
+            
+        except Exception as e:
+            print("Error: ", e)
+            return jsonify({"message": "Error update usera logic."}), 500
+
+    

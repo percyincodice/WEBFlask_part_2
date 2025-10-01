@@ -106,3 +106,23 @@ class UserDA:
         except Exception as e:
             print("Error:", e)
             raise e
+        
+        
+    @staticmethod
+    def updatePassword(username, password, secret):
+        try:
+            collectionBDUsers = MongoClient(secret["conexion_bd"])["apibd_review"]["users"]
+            result = collectionBDUsers.update_one(
+                {"username": username},
+                {"$set": {"password": password}}
+            )
+            
+            if result.matched_count == 0:
+                return jsonify({"message": "User not found."}), 400
+            
+            
+            return jsonify({"message": "User updated."}), 200
+
+        except Exception as e:
+            print("Error:", e)
+            return jsonify({"message": "Error in update user."}), 500
