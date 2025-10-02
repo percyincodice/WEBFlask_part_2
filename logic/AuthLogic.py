@@ -21,7 +21,7 @@ class AuthLogic:
                     "username": username,
                     "rol": "ADMIN"
                 }
-                token_response = AuthDA.generate_token_autenticacion("ABCDE12345", username, 0.1, "WEBAPI", "WEBAPI",
+                token_response = AuthDA.generate_token_autenticacion("ABCDE12345", username, 60, "WEBAPI", "WEBAPI",
                                                                      claims)
                 if token_response["code"] == 200:
                     return jsonify({"token": token_response["token"], "username": username, 
