@@ -1,9 +1,7 @@
 from flask import jsonify
 from pymongo import MongoClient
 from bson import ObjectId
-import json
-import os
-import uuid
+import datetime
 
 class PersonDA:
     client = MongoClient("mongodb://localhost:27017")
@@ -54,11 +52,17 @@ class PersonDA:
 
 
     @staticmethod
-    def updatePersonById(person_id, body):
+    def updatePersonById(person_id, body, decoded_token):
         try:
             result = PersonDA.collectionPersona.update_one(
                 {"_id": ObjectId(person_id)},
-                {"$set": body}
+                {"$set": {
+                    "name": body["name"],
+                    "lastname": body["lastname"],
+                    "age": body["age"],                    
+                    "modifiedAt": datetime.datetime.utcnow(),
+                    "modifiedUser": decoded_token["username"]
+                }}
             )
             
             if result.matched_count == 0:

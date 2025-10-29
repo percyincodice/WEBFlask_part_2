@@ -13,7 +13,7 @@ def createPerson(decoded_token):
         body = request.get_json()
         print('body', body)
 
-        return PersonLogic.createPerson(body)
+        return PersonLogic.createPerson(body, decoded_token)
     except Exception as e:
         print("Error:", e) # cloudwatch aws
         return "Error.", 500
@@ -46,7 +46,7 @@ def getPersonById(decoded_token, person_id):
 def updatePersonById(decoded_token, person_id):
     try:       
         body = request.get_json()
-        return PersonLogic.updatePersonById(person_id, body)
+        return PersonLogic.updatePersonById(person_id, body, decoded_token)
     except Exception as e:
         print("Error:", e) # cloudwatch aws
         return "Error.", 500
