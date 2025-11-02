@@ -1,10 +1,11 @@
 from flask import jsonify
 from dataaccess.PersonDA import PersonDA
+import datetime
 
 class PersonLogic:
 
     @staticmethod
-    def createPerson(body):
+    def createPerson(body, decoded_token):
         try:
             if body["name"] is None or body["name"] == "":
                 return jsonify({"error": "Name is empty."}), 400
@@ -14,7 +15,12 @@ class PersonLogic:
 
             if body["age"] is None or body["age"] < 0:
                 return jsonify({"error": "Age is an error."}), 400
+            
+            body["createdUser"] = decoded_token["username"]
+            body["createdAt"] = datetime.datetime.utcnow()
 
+            body["modifiedUser"] = decoded_token["username"]
+            body["modifiedAt"] = datetime.datetime.utcnow()
 
             return PersonDA.createPerson(body)
         except Exception as e:
@@ -38,7 +44,7 @@ class PersonLogic:
             return jsonify({"message": "Error get detail person logic."}), 500
 
     @staticmethod
-    def updatePersonById(person_id, body):
+    def updatePersonById(person_id, body, decoded_token):
         try:
             if body["name"] is None or body["name"] == "":
                 return jsonify({"error": "Name is empty."}), 400
@@ -48,6 +54,9 @@ class PersonLogic:
 
             if body["age"] is None or body["age"] < 0:
                 return jsonify({"error": "Age is an error."}), 400
+            
+            body["modifiedUser"] = decoded_token["username"]
+            body["modifiedAt"] = datetime.datetime.utcnow()
 
 
             return PersonDA.updatePersonById(person_id, body)

@@ -7,12 +7,13 @@ PersonBp = Blueprint("person", __name__)
 validation_token = ValidationToken()
 
 @PersonBp.route("/api/person", methods=["POST"])
-def createPerson():
+@validation_token.token_required
+def createPerson(decoded_token):
     try:
         body = request.get_json()
         print('body', body)
 
-        return PersonLogic.createPerson(body)
+        return PersonLogic.createPerson(body, decoded_token)
     except Exception as e:
         print("Error:", e) # cloudwatch aws
         return "Error.", 500
@@ -40,10 +41,11 @@ def getPersonById(person_id):
         return "Error.", 500
 
 @PersonBp.route("/api/person/<string:person_id>", methods=["PUT"])
-def updatePersonById(person_id):
+@validation_token.token_required
+def updatePersonById(person_id, decoded_token):
     try:       
         body = request.get_json()
-        return PersonLogic.updatePersonById(person_id, body)
+        return PersonLogic.updatePersonById(person_id, body, decoded_token)
     except Exception as e:
         print("Error:", e) # cloudwatch aws
         return "Error.", 500
